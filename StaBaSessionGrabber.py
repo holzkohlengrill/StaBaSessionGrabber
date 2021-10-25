@@ -70,7 +70,7 @@ def parse_arguments():
     arguments.add_argument(
         "eventURL",
         type=str,
-        help="Event link in the form `https://www.staatsoper.de/stueckinfo/EVENT-NAME/YYYY-MM-DD-HH-MM.html`"
+        help="Event link in the form `https://www.staatsoper.de/stuecke/EVENT-NAME/YYYY-MM-DD-SOME-IDs-SEPARATED-BY-DASHES`"
     )
     return arguments
 
@@ -106,7 +106,7 @@ def process_arguments(arguments):
     parsed_args.eventURL = parsed_args.eventURL.strip()
 
     # Check for valid URL
-    urlRegex = r"['\"]*http[s]?://www\.staatsoper\.de/stueckinfo/[0-9a-zA-Z\-_]+/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}\.html['\"]*"
+    urlRegex = r"['\"]*http[s]?://www\.staatsoper\.de/stuecke/[0-9a-zA-Z\-_]+/\d{4}-\d{2}-\d{2}[-\d]['\"]*"
     pattern = re.compile(urlRegex)
     match = re.search(pattern, parsed_args.eventURL)
     if not match:
