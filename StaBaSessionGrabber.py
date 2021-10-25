@@ -167,7 +167,7 @@ def main():
         sc().info("No sessions created! Exiting...")
         sys.exit(-1)
 
-    # Check if we are still cued and waiting numbers are not yet distributed
+    # Check if we are still queued and waiting numbers are not yet distributed
     firstSession = sessionsRaw[0]
     foundCountdown = True
     while foundCountdown:
@@ -267,64 +267,24 @@ def getEventLink(url, proxyDict=None):
     response = session.get(url, proxies=proxyDict)
     # print(response.text)
     lxmlWebsiteObj = lxml.html.fromstring(response.text)
-    siteInfosSection = extractInfosSection(lxmlWebsiteObj, url)
+    ticketBuyLinkObj = clickTicketByLink(lxmlWebsiteObj, url)
 
-    siteBuyTicketsSection = extractBuyTicketsClass(siteInfosSection, url)
-    siteEventLink = extractEventLink(siteBuyTicketsSection, url)
-    sc().info(f"Event link found: {siteEventLink}")
+    sc().info(f"Event link found: {ticketBuyLinkObj}")
     sc().debug("Cookies (get link session):", session.cookies.get_dict())
-    return siteEventLink
+    return ticketBuyLinkObj
 
 
-def extractInfosSection(lxmlWebsiteObj, url):
-    # Extract `infos` section
-    contentXPattern = r'//*[@id="infos"]'
-    siteInfosSection = lxmlWebsiteObj.xpath(contentXPattern)
-    if len(siteInfosSection) == 0:
-        sc().error(f"Infos section not found for XPath `{contentXPattern}` | url: {url}")
+def clickTicketByLink(lxmlWebsiteObj, url):
+    # Extract `Tickets` title and click
+    contentXPattern = r'//*[@title="Tickets"]'
+    ticketBuyLinkObj = lxmlWebsiteObj.xpath(contentXPattern)
+    if len(ticketBuyLinkObj) == 0:
+        sc().error(f"Tickets section not found for XPath `{contentXPattern}` | url: {url}")
         sys.exit(-1)
     else:
-        resultOutput = lxml.html.tostring(siteInfosSection[0])  # preserves html
-        sc().debug(f"Result extractInfosSection: {resultOutput}")
-    return siteInfosSection[0]
-
-
-def extractBuyTicketsClass(siteInfosSection, url):
-    # Extract `buyTickets` class
-    contentXPattern = r'//*[contains(@class, "buyTickets")]'
-    siteBuyTicketsSection = siteInfosSection.xpath(contentXPattern)  # We only want the first result
-    if len(siteBuyTicketsSection) == 0:
-        sc().error(f"Class `buyTicket` not found for XPath `{contentXPattern}` | url: {url}")
-        sys.exit(-1)
-    else:
-        resultOutput = lxml.html.tostring(siteBuyTicketsSection[0])  # preserves html
-        sc().debug(f"Result extractBuyTicketsClass: {resultOutput}")
-    return siteBuyTicketsSection[0]
-
-
-def extractEventLink(siteBuyTicketsSection, url):
-    # Extract event link
-    contentXPattern = r'.//@href'               # . infront of // means do a local search; otherwise lxml will search the whole html (still not sure where it gets it from since it is a new object)
-    siteEventLink = siteBuyTicketsSection.xpath(contentXPattern)  # We only want the first result
-    if len(siteEventLink) == 0:
-        sc().error(f"Event link not found for XPath `{contentXPattern}` | url: {url}")
-        sys.exit(-1)
-    else:
-        # No idea why this is causing an error
-        # From: https://programtalk.com/python-examples/lxml.etree._ElementStringResult/
-        #
-        # TypeError: Type 'lxml.etree._ElementUnicodeResult' cannot be serialized.
-        # TypeError: Type '_ElementStringResult' cannot be serialized.
-        if isinstance(siteEventLink[0], etree._ElementStringResult):
-            result = siteEventLink[0]
-        elif isinstance(siteEventLink[0], etree._ElementUnicodeResult):
-            result = siteEventLink[0]
-        elif hasattr(siteEventLink[0], 'text'):
-            result = siteEventLink[0].text
-        else:
-            result = etree.tostring(siteEventLink[0])
-        sc().debug(f"Result extractEventLink: {result}")
-    return result
+        resultOutput = ticketBuyLinkObj[0].attrib['href']  # preserves html
+        sc().debug(f"Result clickTicketByLink: {resultOutput}")
+    return resultOutput
 
 
 def checkCountdown(browser):
